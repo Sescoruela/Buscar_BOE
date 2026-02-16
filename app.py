@@ -34,10 +34,9 @@ os.environ["GOOGLE_API_KEY"] = api_key
 # ---------------- LangChain imports ----------------
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_community.tools import DuckDuckGoSearchResults
+from langgraph.prebuilt import create_react_agent
 
 # ---------------- Helpers ----------------
 BOE_BASE = "https://boe.es/datosabiertos/api"
@@ -205,15 +204,8 @@ system_text = (
     "Primero usa herramientas si te faltan datos, y luego responde con una conclusión clara."
 )
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", system_text),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad"),
-])
-
-agent = create_tool_calling_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=False)
+# Crear agente con langgraph
+agent_executor = create_react_agent(llm, tools)
 
 # ---------------- Simple memory in session_state ----------------
 if "history" not in st.session_state:
@@ -224,7 +216,7 @@ for msg in st.session_state.history:
     if isinstance(msg, HumanMessage):
         with st.chat_message("user"):
             st.markdown(msg.content)
-    else:
+    elif isinstance(msg, AIMessage):
         with st.chat_message("assistant"):
             st.markdown(msg.content)
 
@@ -240,10 +232,22 @@ if user_text:
     with st.chat_message("assistant"):
         with st.spinner("Pensando..."):
             try:
-                result = agent_executor.invoke({"input": user_text, "history": history_before})
-                answer = result.get("output", "")
-                if not isinstance(answer, str):
-                    answer = str(answer)
+                # Preparar mensajes con system prompt e historial
+                messages = [SystemMessage(content=system_text)] + history_before + [HumanMessage(content=user_text)]
+                
+                # Invocar agente
+                result = agent_executor.invoke({"messages": messages})
+                
+                # Extraer respuesta del agente
+                answer = ""
+                if "messages" in result:
+                    for msg in result["messages"]:
+                        if isinstance(msg, AIMessage) and msg.content:
+                            answer = msg.content
+                
+                if not answer:
+                    answer = "No pude generar una respuesta."
+                    
             except Exception as e:
                 answer = f"⚠️ Error ejecutando el agente: {type(e).__name__}: {e}"
 
