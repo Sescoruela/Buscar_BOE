@@ -33,15 +33,19 @@ os.environ["GOOGLE_API_KEY"] = api_key
 
 # ---------------- LangChain imports ----------------
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.tools import tool
+from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 
-# Compatibilidad de versiones: AgentExecutor puede vivir en langchain_classic o langchain.agents
+# Compatibilidad de versiones: AgentExecutor puede vivir en langchain o langchain.agents
 try:
-    from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
-except ImportError:
     from langchain.agents import AgentExecutor, create_tool_calling_agent
+except ImportError:
+    try:
+        from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
+    except ImportError:
+        # Fallback: intentar importar desde langchain_core
+        pass
 
 from langchain_community.tools import DuckDuckGoSearchResults
 
