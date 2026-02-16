@@ -1,0 +1,8 @@
+streamlit>=1.30
+requests>=2.31
+
+langchain-community>=0.3.31
+langchain-google-genai
+langchain-classic
+
+ddgs
