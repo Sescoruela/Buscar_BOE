@@ -241,9 +241,21 @@ if user_text:
                 # Extraer respuesta del agente
                 answer = ""
                 if "messages" in result:
-                    for msg in result["messages"]:
-                        if isinstance(msg, AIMessage) and msg.content:
-                            answer = msg.content
+                    # Buscar el último mensaje del asistente
+                    for msg in reversed(result["messages"]):
+                        if isinstance(msg, AIMessage):
+                            # Extraer contenido del mensaje
+                            if isinstance(msg.content, str):
+                                answer = msg.content
+                                break
+                            elif isinstance(msg.content, list):
+                                # Si es una lista, buscar elementos de tipo 'text'
+                                for item in msg.content:
+                                    if isinstance(item, dict) and item.get('type') == 'text':
+                                        answer = item.get('text', '')
+                                        break
+                                if answer:
+                                    break
                 
                 if not answer:
                     answer = "No pude generar una respuesta."
