@@ -1,11 +1,12 @@
 streamlit>=1.30
 requests>=2.31
 
-# LangChain dependencies
+# LangChain dependencies (sin langgraph)
 langchain-core>=1.0
-langchain-community>=0.3.31
 langchain-google-genai>=4.0
-langgraph>=0.2.0
 
 # Search tool
 ddgs>=9.0
+
+# Email functionality
+python-dotenv>=1.0.0
